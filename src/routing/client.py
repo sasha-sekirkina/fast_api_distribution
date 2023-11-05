@@ -25,10 +25,10 @@ def get_clients():
 @router.post('/add')
 def add_client(client: NewClient):
     data_manager.clients.add(client)
-    return {"status": 200, "message": "OK"}
+    return "OK"
 
 
-@router.put('/update/{client_id}')
+@router.put('/update/{client_id}', responses={404: {"message": "Not found"}})
 def update_client(client_id: int, updated_fields: UpdateClient):
     result = data_manager.clients.update(client_id, updated_fields)
     if result is False:
@@ -36,7 +36,9 @@ def update_client(client_id: int, updated_fields: UpdateClient):
     return "OK"
 
 
-@router.delete('/delete/{client_id}')
+@router.delete('/delete/{client_id}', responses={404: {"message": "Not found"}})
 def delete_client(client_id):
-    data_manager.clients.delete(client_id)
+    result = data_manager.clients.delete(client_id)
+    if result is False:
+        raise HTTPException(status_code=404, detail="Not found")
     return "OK"

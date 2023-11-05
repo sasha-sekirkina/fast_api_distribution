@@ -31,7 +31,7 @@ def add_distribution(distribution: NewDistribution):
     return "OK"
 
 
-@router.put('/update/{dist_id}')
+@router.put('/update/{dist_id}', responses={404: {"message": "Not found"}})
 def update_distribution(dist_id: int, updated_fields: UpdateDistribution):
     result = data_manager.distributions.update(dist_id, updated_fields)
     if result is False:
@@ -39,7 +39,7 @@ def update_distribution(dist_id: int, updated_fields: UpdateDistribution):
     return "OK"
 
 
-@router.delete('/delete/{dist_id}')
+@router.delete('/delete/{dist_id}', responses={404: {"message": "Not found"}})
 def delete_distribution(dist_id):
     data_manager.distributions.delete(dist_id)
     return "OK"
