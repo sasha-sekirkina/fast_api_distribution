@@ -41,5 +41,7 @@ def update_distribution(dist_id: int, updated_fields: UpdateDistribution):
 
 @router.delete('/delete/{dist_id}', responses={404: {"message": "Not found"}})
 def delete_distribution(dist_id):
-    data_manager.distributions.delete(dist_id)
+    result = data_manager.distributions.delete(dist_id)
+    if result is False:
+        raise HTTPException(status_code=404, detail="Not found")
     return "OK"
