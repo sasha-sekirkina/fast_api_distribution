@@ -49,8 +49,8 @@ class NewDistribution(BaseModel):
     start_date: datetime
     end_date: datetime
     text: str
-    filter_mobile_operator: Optional[int] = None
-    filter_tag: Optional[str] = None
+    filter_mobile_operator: int = 000
+    filter_tag: str = "all"
 
     @field_validator("filter_mobile_operator")
     def validate_mobile_operator(cls, value):

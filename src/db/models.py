@@ -23,8 +23,8 @@ class Distribution(Base):
     start_date: Mapped[datetime] = mapped_column(DateTime)
     end_date: Mapped[datetime] = mapped_column(DateTime)
     text: Mapped[str] = mapped_column(String)
-    filter_mobile_operator: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    filter_tag: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    filter_mobile_operator: Mapped[Optional[int]] = mapped_column(Integer, default="all")
+    filter_tag: Mapped[Optional[str]] = mapped_column(String, default="all")
     status: Mapped[str] = mapped_column(String, default="created")
 
     messages = relationship("Message", back_populates="distribution")
