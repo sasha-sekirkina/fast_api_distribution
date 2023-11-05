@@ -23,7 +23,7 @@ class Distribution(Base):
     start_date: Mapped[datetime] = mapped_column(DateTime)
     end_date: Mapped[datetime] = mapped_column(DateTime)
     text: Mapped[str] = mapped_column(String)
-    filter_mobile_operator: Mapped[Optional[int]] = mapped_column(Integer, default="all")
+    filter_mobile_operator: Mapped[Optional[str]] = mapped_column(String, default="000")
     filter_tag: Mapped[Optional[str]] = mapped_column(String, default="all")
     status: Mapped[str] = mapped_column(String, default="created")
 
@@ -35,7 +35,7 @@ class Client(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     phone_number: Mapped[int] = mapped_column(Integer)
-    mobile_operator: Mapped[int] = mapped_column(Integer)
+    mobile_operator: Mapped[str] = mapped_column(String)
     tag: Mapped[str] = mapped_column(String, nullable=True)
     time_zone: Mapped[str] = mapped_column(String)
 
@@ -49,7 +49,7 @@ class Client(Base):
 
     @validates("mobile_operator")
     def validate_mobile_operator(self, _, value):
-        if len(str(value)) == 3 and str(value).isalnum():
+        if len(value) == 3 and value.isalnum():
             return value
         raise ValueError("Mobile operator validation failed")
 
