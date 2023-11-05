@@ -1,30 +1,25 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
 import pytz
 from pydantic import BaseModel, field_validator, Field
 
 
 class ClientValidation(BaseModel):
-    phone_number: int
-    mobile_operator: int
-    tag: str
+    phone_number: int = Field(ge=70000000000, lt=80000000000)
+    mobile_operator: int = Field(ge=100, lt=1000)
+    tag: Optional[str] = None
     time_zone: str
-
-    @field_validator("phone_number")
-    def validate_phone_num(cls, value):
-        if len(str(value)) == 11 and str(value).startswith("7") and str(value).isalnum():
-            return value
-        raise ValueError("phone number validation failed")
 
     @field_validator("mobile_operator")
     def validate_mobile_operator(cls, value):
         if len(str(value)) == 3 and str(value).isalnum():
             return value
-        raise ValueError("mobile operator validation failed")
+        raise ValueError("Mobile operator validation failed")
 
     @field_validator("time_zone")
-    def validate_time_zone(cls, _, value):
+    def validate_time_zone(cls, value):
+        print(value, value in pytz.all_timezones)
         if value in pytz.all_timezones:
             return value
         raise ValueError("Time zone validation failed")
@@ -41,5 +36,5 @@ class DistributionValidation(BaseModel):
     def validate_mobile_operator(cls, value):
         if len(str(value)) == 3 and str(value).isalnum() or value is None:
             return value
-        raise ValueError("mobile operator validation failed")
+        raise ValueError("Mobile operator validation failed")
 
