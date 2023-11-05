@@ -13,7 +13,6 @@ class NewClient(BaseModel):
 
     @field_validator("time_zone")
     def validate_time_zone(cls, value):
-        print(value, value in pytz.all_timezones)
         if value in pytz.all_timezones:
             return value
         raise ValueError("Time zone validation failed")
@@ -21,7 +20,7 @@ class NewClient(BaseModel):
 
 class UpdateClient(BaseModel):
     phone_number: Optional[int] = None
-    mobile_operator: int = Field(ge=100, lt=1000)
+    mobile_operator: Optional[int] = None
     tag: Optional[str] = None
     time_zone: Optional[str] = None
 
@@ -39,7 +38,6 @@ class UpdateClient(BaseModel):
 
     @field_validator("time_zone")
     def validate_time_zone(cls, value):
-        print(value, value in pytz.all_timezones)
         if value in pytz.all_timezones:
             return value
         raise ValueError("Time zone validation failed")
