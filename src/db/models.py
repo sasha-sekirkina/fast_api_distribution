@@ -64,7 +64,7 @@ class Message(Base):
     __tablename__ = "message"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    sending_time: Mapped[datetime] = mapped_column(DateTime)
+    sending_time: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     status: Mapped[str] = mapped_column(String, default="created")
     distribution_id: Mapped["Distribution"] = mapped_column(ForeignKey("distribution.id"))
     client_id: Mapped["Client"] = mapped_column(ForeignKey("client.id"))
