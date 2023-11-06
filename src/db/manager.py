@@ -14,7 +14,6 @@ class DataManager:
         self.clients = ClientsManager(self.session_maker)
 
     def get_stat(self) -> Dict:
-        # todo refactor
         stat = {}
         with self.session_maker() as session:
             distributions = [vars(dist) for dist in session.query(Distribution).all()]
@@ -99,26 +98,41 @@ class DistributionsManager:
                 stat["messages"]["sent"] = list(filter(lambda message: message["status"] == "sent", total_messages))
         return stat
 
-    def mark_started(self, dist_id: int):
+    def manage_status(self, dist_id: int) -> str:
         with self.session_maker() as session:
             distribution: Distribution = session.get(Distribution, dist_id)
-            distribution.status = "started"
-            session.commit()
-
-    def mark_finished(self, dist_id: int):
-        with self.session_maker() as session:
-            distribution: Distribution = session.get(Distribution, dist_id)
+            if distribution.status in ["finished", "created"]:
+                return distribution.status
+            messages = self.get_messages(distribution.id)
+            for message in messages:
+                if message.status == "created":
+                    return "started"
             distribution.status = "finished"
             session.commit()
+            return distribution.status
 
     def create_messages(self, dist_id: int):
         with self.session_maker() as session:
             distribution: Distribution = session.get(Distribution, dist_id)
-            if distribution.status == "created":
-                clients = session.query(Client).all()
-                for client in clients:
-                    session.add(Message(distribution=distribution.id, client=client.id))
+            clients = session.query(Client).all()
+            if distribution.filter_tag is not None and distribution.filter_tag != "all":
+                clients = clients.where(Client.tag == distribution.filter_tag)
+            if distribution.filter_mobile_operator is not None and distribution.filter_mobile_operator != "000":
+                clients = clients.where(Client.mobile_operator == distribution.filter_mobile_operator)
+            for client in clients:
+                session.add(Message(distribution=distribution.id, client=client.id))
             distribution.status = "started"
+            session.commit()
+
+    def get_messages(self, dist_id: int) -> List[Message]:
+        with self.session_maker() as session:
+            messages = session.query(Message).where(Message.distribution_id == dist_id)
+            return messages
+
+    def mark_message_sent(self, message_id):
+        with self.session_maker() as session:
+            message = session.get(Message, message_id)
+            message.status = "sent"
             session.commit()
 
 
