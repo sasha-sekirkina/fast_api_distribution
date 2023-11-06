@@ -3,14 +3,12 @@ from typing import List
 
 import pytz
 import requests
-from celery import Celery
 from celery.utils.log import get_task_logger
 
+from celery_conf import celery
 from configs import TOKEN, URL
 from db.models import Distribution, Message
 from db.manager import data_manager
-
-celery = Celery("distribute", broker="redis://localhost:6379", accept_content=['pickle'])
 
 logger = get_task_logger(__name__)
 
