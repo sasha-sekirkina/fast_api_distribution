@@ -4,6 +4,7 @@ from typing import Dict
 import pytz
 import requests
 from celery.utils.log import get_task_logger
+from pytz import UTC as utc
 
 from celery_conf import celery
 from configs import TOKEN, URL
@@ -21,8 +22,8 @@ def distribute(self, distribution: Dict):
         if message.status != "sent":
             client = data_manager.clients.get_by_id(message.client_id)
             timezone = pytz.timezone(client.time_zone)
-            now = datetime.now(timezone)
-            if distribution["start_date"] <= now.time() <= distribution["end_date"]:
+            if (distribution["start_date"].replace(tzinfo=utc) <= datetime.now(timezone)
+                    <= distribution["end_date"].replace(tzinfo=utc)):
                 header = {
                     "Authorization": f"Bearer {TOKEN}",
                     "Content-Type": "application/json",
@@ -37,7 +38,8 @@ def distribute(self, distribution: Dict):
                 except requests.exceptions.RequestException as exc:
                     logger.warning(f"Sending message {message.id} failed: {exc}")
                 else:
-                    logger.info(f"Message sent id={message.id}, phone={client.phone_number}, text={distribution['text']}")
+                    logger.info(
+                        f"Message sent id={message.id}, phone={client.phone_number}, text={distribution['text']}")
                     data_manager.distributions.mark_message_sent(message.id)
     status = data_manager.distributions.manage_status(distribution["id"])
     if status == "started":

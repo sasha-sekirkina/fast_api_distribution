@@ -158,7 +158,7 @@ class DistributionsManager:
         with self.session_maker() as session:
             message = session.get(Message, message_id)
             message.status = "sent"
-            message.sending_time = datetime.datetime.now().isoformat()
+            message.sending_time = datetime.datetime.now()
             session.commit()
 
 
