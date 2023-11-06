@@ -20,9 +20,9 @@ def distribute(self, distribution: Dict):
     for message in messages_to_send:
         if message.status != "sent":
             client = data_manager.clients.get_by_id(message.client_id)
-            timezone = pytz.timezone(client.timezone)
+            timezone = pytz.timezone(client.time_zone)
             now = datetime.now(timezone)
-            if distribution["time_start"] <= now.time() <= distribution["time_end"]:
+            if distribution["start_date"] <= now.time() <= distribution["end_date"]:
                 header = {
                     "Authorization": f"Bearer {TOKEN}",
                     "Content-Type": "application/json",
