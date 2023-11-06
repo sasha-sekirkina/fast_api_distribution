@@ -27,7 +27,7 @@ class Distribution(Base):
     filter_tag: Mapped[Optional[str]] = mapped_column(String, default="all")
     status: Mapped[str] = mapped_column(String, default="created")
 
-    messages = relationship("Message", back_populates="distribution")
+    messages = relationship("Message", back_populates="distribution", cascade="save-update, merge, delete")
 
 
 class Client(Base):
@@ -39,7 +39,7 @@ class Client(Base):
     tag: Mapped[str] = mapped_column(String, nullable=True)
     time_zone: Mapped[str] = mapped_column(String)
 
-    messages = relationship("Message", back_populates="client", cascade="all, delete-orphan")
+    messages = relationship("Message", back_populates="client", cascade="save-update, merge, delete")
 
     @validates("phone_number")
     def validate_phone_number(self, _, value):
