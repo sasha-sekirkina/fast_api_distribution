@@ -25,6 +25,7 @@ class DataManager:
         if not callable(value):
             raise ValueError
         self._distribute_callback = value
+        self.distributions.distribute_callback = value
 
     def get_stat(self) -> Dict:
         # todo refactor
@@ -60,16 +61,18 @@ class DistributionsManager:
                 end_date=distribution.end_date,
                 filter_mobile_operator=distribution.filter_mobile_operator,
                 filter_tag=distribution.filter_tag,
-                text=distribution.text
+                text=distribution.text,
+                name=distribution.name
             ))
             session.commit()
-        dist = vars(distribution)
+            dst = session.query(Distribution).where(Distribution.name == distribution.name).first()
+        dst = vars(dst)
         if self.distribute_callback is not None:
             self.distribute_callback.apply_async(
-                (dist,),
-                eta=dist["start_date"],
-                expires=dist["end_date"],
-                task_id=dist["id"]
+                (dst,),
+                eta=dst["start_date"],
+                expires=dst["end_date"],
+                task_id=dst["id"]
             )
 
     def update(self, dist_id, updated_params: UpdateDistribution) -> bool:
@@ -77,6 +80,8 @@ class DistributionsManager:
             distribution = session.get(Distribution, dist_id)
             if distribution is None or distribution.status != "created":
                 return False
+            if updated_params.name is not None:
+                distribution.name = updated_params.name
             if updated_params.start_date is not None:
                 distribution.start_date = updated_params.start_date
             if updated_params.end_date is not None:
@@ -88,6 +93,14 @@ class DistributionsManager:
             if updated_params.text is not None:
                 distribution.text = updated_params.text
             session.commit()
+        celery.control.revoke(dist_id, terminate=True)
+        dist = vars(self.get_by_id(dist_id))
+        self.distribute_callback.apply_async(
+            (dist,),
+            eta=dist["start_date"],
+            expires=dist["end_date"],
+            task_id=dist["id"]
+        )
         return True
 
     def delete(self, dist_id: int) -> bool:
