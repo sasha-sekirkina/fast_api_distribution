@@ -39,7 +39,7 @@ class Client(Base):
     tag: Mapped[str] = mapped_column(String, nullable=True)
     time_zone: Mapped[str] = mapped_column(String)
 
-    messages = relationship("Message", back_populates="client")
+    messages = relationship("Message", back_populates="client", cascade="all, delete-orphan")
 
     @validates("phone_number")
     def validate_phone_number(self, _, value):
