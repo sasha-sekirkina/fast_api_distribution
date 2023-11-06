@@ -2,4 +2,6 @@ fastapi
 sqlalchemy
 pydantic
 celery
+flower
 requests
+redis
