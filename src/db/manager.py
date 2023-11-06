@@ -1,7 +1,9 @@
-from typing import Dict, List, Any, Union
+import datetime
+from typing import Dict, List, Union
 
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker
 
+from celery_conf import celery
 from db.models import Base, engine, Distribution, Client, Message
 from services.validation import NewDistribution, NewClient, UpdateClient, UpdateDistribution
 
@@ -14,6 +16,7 @@ class DataManager:
         self.clients = ClientsManager(self.session_maker)
 
     def get_stat(self) -> Dict:
+        # todo refactor
         stat = {}
         with self.session_maker() as session:
             distributions = [vars(dist) for dist in session.query(Distribution).all()]
@@ -48,11 +51,18 @@ class DistributionsManager:
                 text=distribution.text
             ))
             session.commit()
+        # dist = vars(distribution)
+        # distribute.apply_async(
+        #     (dist,),
+        #     eta=dist["start_date"],
+        #     expires=dist["end_date"],
+        #     task_id=dist["id"]
+        # )
 
     def update(self, dist_id, updated_params: UpdateDistribution) -> bool:
         with self.session_maker() as session:
             distribution = session.get(Distribution, dist_id)
-            if distribution is None:
+            if distribution is None or distribution.status != "created":
                 return False
             if updated_params.start_date is not None:
                 distribution.start_date = updated_params.start_date
@@ -71,10 +81,10 @@ class DistributionsManager:
         with self.session_maker() as session:
             dist = session.get(Distribution, dist_id)
             if dist is None:
-                print("dist is None")
                 return False
             session.delete(dist)
             session.commit()
+        celery.control.revoke(dist_id, terminate=True)
         return True
 
     def get_stat(self, dist_id: int, detailed=False) -> Union[Dict, bool]:
@@ -133,6 +143,7 @@ class DistributionsManager:
         with self.session_maker() as session:
             message = session.get(Message, message_id)
             message.status = "sent"
+            message.sending_time = datetime.datetime.now().isoformat()
             session.commit()
 
 
@@ -178,7 +189,6 @@ class ClientsManager:
         with self.session_maker() as session:
             cli = session.get(Client, client_id)
             if cli is None:
-                print("cli is none")
                 return False
             session.delete()
             session.commit()
