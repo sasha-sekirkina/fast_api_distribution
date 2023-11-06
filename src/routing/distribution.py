@@ -3,7 +3,7 @@ from typing import List, Dict
 from fastapi import APIRouter, HTTPException
 from fastapi.encoders import jsonable_encoder
 
-from db.manager import data_manager
+from depends import data_manager
 from services.validation import NewDistribution, UpdateDistribution
 
 router = APIRouter(prefix="/distribution", tags=["distribution"])

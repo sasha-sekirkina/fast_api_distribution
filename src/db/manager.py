@@ -11,9 +11,20 @@ from services.validation import NewDistribution, NewClient, UpdateClient, Update
 class DataManager:
     def __init__(self):
         Base.metadata.create_all(engine)
+        self._distribute_callback = None
         self.session_maker = sessionmaker(engine)
-        self.distributions = DistributionsManager(self.session_maker)
-        self.clients = ClientsManager(self.session_maker)
+        self.distributions = DistributionsManager(self)
+        self.clients = ClientsManager(self)
+
+    @property
+    def distribute_callback(self):
+        return self._distribute_callback
+
+    @distribute_callback.setter
+    def distribute_callback(self, value: Callable):
+        if not callable(value):
+            raise ValueError
+        self._distribute_callback = value
 
     def get_stat(self) -> Dict:
         # todo refactor
@@ -51,13 +62,14 @@ class DistributionsManager:
                 text=distribution.text
             ))
             session.commit()
-        # dist = vars(distribution)
-        # distribute.apply_async(
-        #     (dist,),
-        #     eta=dist["start_date"],
-        #     expires=dist["end_date"],
-        #     task_id=dist["id"]
-        # )
+        dist = vars(distribution)
+        if self.distribute_callback is not None:
+            self.distribute_callback.apply_async(
+                (dist,),
+                eta=dist["start_date"],
+                expires=dist["end_date"],
+                task_id=dist["id"]
+            )
 
     def update(self, dist_id, updated_params: UpdateDistribution) -> bool:
         with self.session_maker() as session:
@@ -190,9 +202,6 @@ class ClientsManager:
             cli = session.get(Client, client_id)
             if cli is None:
                 return False
-            session.delete()
+            session.delete(cli)
             session.commit()
         return True
-
-
-data_manager = DataManager()

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from db.manager import data_manager
+from depends import data_manager
 
 router = APIRouter(prefix="/stat", tags=["stat"])
 

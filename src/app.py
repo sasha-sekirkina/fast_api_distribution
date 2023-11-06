@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from db.manager import data_manager
+from depends import data_manager
 from distribution.task import distribute
 from routing.client import router as client_router
 from routing.distribution import router as distribution_router
@@ -19,6 +19,7 @@ app.include_router(stat_router)
 
 @app.on_event("startup")
 async def startup_event():
+    data_manager.distribute_callback = distribute
     existing_distributions = data_manager.distributions.get_all()
     for dist in existing_distributions:
         if dist["status"] != "finished":

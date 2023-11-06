@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
-from db.manager import data_manager
+from depends import data_manager
 from services.validation import NewClient, UpdateClient
 
 router = APIRouter(prefix="/client", tags=["client"])

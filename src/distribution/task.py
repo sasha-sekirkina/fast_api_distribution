@@ -7,7 +7,7 @@ from celery.utils.log import get_task_logger
 
 from celery_conf import celery
 from configs import TOKEN, URL
-from db.manager import data_manager
+from depends import data_manager
 
 logger = get_task_logger(__name__)
 
