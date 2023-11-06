@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from typing import Dict
 
@@ -7,8 +8,9 @@ from celery.utils.log import get_task_logger
 from pytz import UTC as utc
 
 from celery_conf import celery
-from configs import TOKEN, URL
+from configs import URL, TOKEN
 from depends import data_manager
+
 
 logger = get_task_logger(__name__)
 
