@@ -20,6 +20,7 @@ class Distribution(Base):
     __tablename__ = "distribution"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String, default="Distribution")
     start_date: Mapped[datetime] = mapped_column(DateTime)
     end_date: Mapped[datetime] = mapped_column(DateTime)
     text: Mapped[str] = mapped_column(String)

@@ -50,6 +50,7 @@ class UpdateClient(BaseModel):
 
 
 class NewDistribution(BaseModel):
+    name: str = "Distribution"
     start_date: datetime
     end_date: datetime
     text: str
@@ -64,6 +65,7 @@ class NewDistribution(BaseModel):
 
 
 class UpdateDistribution(BaseModel):
+    name: Optional[str] = None
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     text: Optional[str] = None
