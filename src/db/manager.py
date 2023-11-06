@@ -1,7 +1,7 @@
 import datetime
-from typing import Dict, List, Union
+from typing import Dict, List, Callable, Type
 
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Query
 
 from celery_conf import celery
 from db.models import Base, engine, Distribution, Client, Message
@@ -41,10 +41,11 @@ class DataManager:
 
 
 class DistributionsManager:
-    def __init__(self, session_maker):
-        self.session_maker = session_maker
+    def __init__(self, parent: DataManager):
+        self.session_maker = parent.session_maker
+        self.distribute_callback = parent.distribute_callback
 
-    def get_by_id(self, dist_id: int) -> Distribution:
+    def get_by_id(self, dist_id: int) -> Type[Distribution] | None:
         with self.session_maker() as session:
             return session.get(Distribution, dist_id)
 
@@ -99,11 +100,11 @@ class DistributionsManager:
         celery.control.revoke(dist_id, terminate=True)
         return True
 
-    def get_stat(self, dist_id: int, detailed=False) -> Union[Dict, bool]:
+    def get_stat(self, dist_id: int, detailed=False) -> Dict | bool:
         # todo refactor
         stat = {}
         with self.session_maker() as session:
-            distribution: Distribution = session.get(Distribution, dist_id)
+            distribution: Distribution | None = session.get(Distribution, dist_id)
             if distribution is None:
                 return False
             stat["distribution"] = distribution
@@ -120,9 +121,11 @@ class DistributionsManager:
                 stat["messages"]["sent"] = list(filter(lambda message: message["status"] == "sent", total_messages))
         return stat
 
-    def manage_status(self, dist_id: int) -> str:
+    def manage_status(self, dist_id: int) -> str | None:
         with self.session_maker() as session:
-            distribution: Distribution = session.get(Distribution, dist_id)
+            distribution: Distribution | None = session.get(Distribution, dist_id)
+            if distribution is None:
+                return distribution
             if distribution.status in ["finished", "created"]:
                 return distribution.status
             messages = self.get_messages(distribution.id)
@@ -135,18 +138,18 @@ class DistributionsManager:
 
     def create_messages(self, dist_id: int):
         with self.session_maker() as session:
-            distribution: Distribution = session.get(Distribution, dist_id)
+            distribution: Distribution | None = session.get(Distribution, dist_id)
             clients = session.query(Client).all()
             if distribution.filter_tag is not None and distribution.filter_tag != "all":
-                clients = clients.where(Client.tag == distribution.filter_tag)
+                clients = session.query(Client).where(Client.tag == distribution.filter_tag)
             if distribution.filter_mobile_operator is not None and distribution.filter_mobile_operator != "000":
-                clients = clients.where(Client.mobile_operator == distribution.filter_mobile_operator)
+                clients = session.query(Client).where(Client.mobile_operator == distribution.filter_mobile_operator)
             for client in clients:
-                session.add(Message(distribution=distribution.id, client=client.id))
+                session.add(Message(distribution_id=distribution.id, client_id=client.id))
             distribution.status = "started"
             session.commit()
 
-    def get_messages(self, dist_id: int) -> List[Message]:
+    def get_messages(self, dist_id: int) -> Query:
         with self.session_maker() as session:
             messages = session.query(Message).where(Message.distribution_id == dist_id)
             return messages
@@ -160,8 +163,8 @@ class DistributionsManager:
 
 
 class ClientsManager:
-    def __init__(self, session_maker):
-        self.session_maker = session_maker
+    def __init__(self, parent):
+        self.session_maker = parent.session_maker
 
     def get_by_id(self, client_id: int) -> Client:
         with self.session_maker() as session:
