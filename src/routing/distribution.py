@@ -35,7 +35,8 @@ def add_distribution(distribution: NewDistribution):
 def update_distribution(dist_id: int, updated_fields: UpdateDistribution):
     result = data_manager.distributions.update(dist_id, updated_fields)
     if result is False:
-        raise HTTPException(status_code=404, detail="Not found")
+        raise HTTPException(status_code=403,
+                            detail="Distribution not found or distribution already started or finished")
     return "OK"
 
 
@@ -43,5 +44,5 @@ def update_distribution(dist_id: int, updated_fields: UpdateDistribution):
 def delete_distribution(dist_id):
     result = data_manager.distributions.delete(dist_id)
     if result is False:
-        raise HTTPException(status_code=404, detail="Not found")
+        raise HTTPException(status_code=403, detail="Distribution not found")
     return "OK"
