@@ -152,6 +152,8 @@ class DistributionsManager:
     def create_messages(self, dist_id: int):
         with self.session_maker() as session:
             distribution: Distribution | None = session.get(Distribution, dist_id)
+            if distribution is None:
+                return
             clients = session.query(Client).all()
             if distribution.filter_tag is not None and distribution.filter_tag != "all":
                 clients = session.query(Client).where(Client.tag == distribution.filter_tag)
