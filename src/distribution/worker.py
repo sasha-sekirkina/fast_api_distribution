@@ -14,6 +14,7 @@ class DistributionsWorker(Thread):
         self._data_manager: DataManager = data_manager
         self._first_run = True
         super().__init__()
+        self.daemon = True
 
     def run(self):
         while True:
