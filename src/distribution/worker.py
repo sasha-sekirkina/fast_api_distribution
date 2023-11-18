@@ -30,7 +30,7 @@ class DistributionsWorker(Thread):
                             distribute.apply_async((distribution["id"],), expires=distribution["end_date"])
                             logger.info(f"Distribution {distribution['id']} worker started")
                         else:
-                            self._data_manager.distributions.mark_distribution(distribution["id"])
+                            self._data_manager.distributions.mark_distribution_expired(distribution["id"])
                             logger.info(f"Distribution {distribution['id']} expired")
 
             self._first_run = False
