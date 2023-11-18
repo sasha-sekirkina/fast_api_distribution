@@ -26,12 +26,11 @@ class DistributionsWorker(Thread):
                     now = datetime.now()
                     if distribution["start_date"] < now:
                         if distribution["end_date"] > now:
-                            logger.info(f"Distribution {distribution['id']} started")
-                            self._data_manager.distributions.mark_distribution(distribution["id"], "started")
                             distribute.apply_async((distribution["id"],), expires=distribution["end_date"])
+                            logger.info(f"Distribution {distribution['id']} worker started")
                         else:
+                            self._data_manager.distributions.mark_distribution(distribution["id"])
                             logger.info(f"Distribution {distribution['id']} expired")
-                            self._data_manager.distributions.mark_distribution(distribution["id"], "expired")
 
             self._first_run = False
             sleep(15)

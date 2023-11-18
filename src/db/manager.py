@@ -147,13 +147,12 @@ class DistributionsManager:
             message.sending_time = datetime.datetime.now()
             session.commit()
 
-    def mark_distribution(self, distribution_id: int, status_string: str):
-        if status_string in ["started", "expired"]:
-            with self.session_maker() as session:
-                distribution = self.get_by_id(distribution_id)
-                if distribution is not None:
-                    distribution.status = status_string
-                    session.commit()
+    def mark_distribution_expired(self, distribution_id: int):
+        with self.session_maker() as session:
+            distribution = self.get_by_id(distribution_id)
+            if distribution is not None:
+                distribution.status = "expired"
+                session.commit()
 
 
 class ClientsManager:
