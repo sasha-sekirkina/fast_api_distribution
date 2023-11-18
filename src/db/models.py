@@ -6,13 +6,15 @@ import pytz
 from sqlalchemy import create_engine, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import declarative_base, validates, relationship, Mapped, mapped_column
 
-engine = create_engine("sqlite:///distribution.db", echo=True)
+engine = create_engine("sqlite:///distribution.db")
 Base = declarative_base()
 
 
 class DistributionStatus(enum.Enum):
     CREATED = "created"
     STARTED = "started"
+    UNFINISHED = "unfinished"
+    EXPIRED = "expired"
     FINISHED = "finished"
 
 

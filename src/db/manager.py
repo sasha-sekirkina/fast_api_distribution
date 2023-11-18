@@ -11,21 +11,9 @@ from services.validation import NewDistribution, NewClient, UpdateClient, Update
 class DataManager:
     def __init__(self):
         Base.metadata.create_all(engine)
-        self._distribute_callback = None
         self.session_maker = sessionmaker(engine)
         self.distributions = DistributionsManager(self)
         self.clients = ClientsManager(self)
-
-    @property
-    def distribute_callback(self):
-        return self._distribute_callback
-
-    @distribute_callback.setter
-    def distribute_callback(self, value: Callable):
-        if not callable(value):
-            raise ValueError
-        self._distribute_callback = value
-        self.distributions.distribute_callback = value
 
     def get_stat(self) -> Dict:
         # todo refactor
@@ -44,7 +32,6 @@ class DataManager:
 class DistributionsManager:
     def __init__(self, parent: DataManager):
         self.session_maker = parent.session_maker
-        self.distribute_callback = parent.distribute_callback
 
     def get_by_id(self, dist_id: int) -> Type[Distribution] | None:
         with self.session_maker() as session:
@@ -65,20 +52,11 @@ class DistributionsManager:
                 name=distribution.name
             ))
             session.commit()
-            dst = session.query(Distribution).where(Distribution.name == distribution.name).first()
-        dst = vars(dst)
-        if self.distribute_callback is not None:
-            self.distribute_callback.apply_async(
-                (dst,),
-                eta=dst["start_date"],
-                expires=dst["end_date"],
-                task_id=dst["id"]
-            )
 
     def update(self, dist_id, updated_params: UpdateDistribution) -> bool:
         with self.session_maker() as session:
             distribution = session.get(Distribution, dist_id)
-            if distribution is None or distribution.status != "created":
+            if distribution is None or distribution.status not in ["created", "unfinished"]:
                 return False
             if updated_params.name is not None:
                 distribution.name = updated_params.name
@@ -93,14 +71,6 @@ class DistributionsManager:
             if updated_params.text is not None:
                 distribution.text = updated_params.text
             session.commit()
-        celery.control.revoke(dist_id, terminate=True)
-        dist = vars(self.get_by_id(dist_id))
-        self.distribute_callback.apply_async(
-            (dist,),
-            eta=dist["start_date"],
-            expires=dist["end_date"],
-            task_id=dist["id"]
-        )
         return True
 
     def delete(self, dist_id: int) -> bool:
@@ -142,12 +112,13 @@ class DistributionsManager:
             if distribution.status in ["finished", "created"]:
                 return distribution.status
             messages = self.get_messages(distribution.id)
+            new_status = "finished"
             for message in messages:
                 if message.status == "created":
-                    return "started"
-            distribution.status = "finished"
+                    new_status = "unfinished"
+            distribution.status = new_status
             session.commit()
-            return distribution.status
+            return new_status
 
     def create_messages(self, dist_id: int):
         with self.session_maker() as session:
@@ -175,6 +146,14 @@ class DistributionsManager:
             message.status = "sent"
             message.sending_time = datetime.datetime.now()
             session.commit()
+
+    def mark_distribution(self, distribution_id: int, status_string: str):
+        if status_string in ["started", "expired"]:
+            with self.session_maker() as session:
+                distribution = self.get_by_id(distribution_id)
+                if distribution is not None:
+                    distribution.status = status_string
+                    session.commit()
 
 
 class ClientsManager:
