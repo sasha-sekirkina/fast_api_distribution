@@ -15,8 +15,7 @@ class DataManager:
         self.distributions = DistributionsManager(self)
         self.clients = ClientsManager(self)
 
-    def get_stat(self) -> Dict:
-        # todo refactor
+    def get_stat(self, detailed: bool = False) -> Dict:
         stat = {}
         with self.session_maker() as session:
             distributions = [vars(dist) for dist in session.query(Distribution).all()]
@@ -31,6 +30,7 @@ class DataManager:
 
 class DistributionsManager:
     def __init__(self, parent: DataManager):
+        self.parent = parent
         self.session_maker = parent.session_maker
 
     def get_by_id(self, dist_id: int) -> Type[Distribution] | None:
@@ -93,15 +93,20 @@ class DistributionsManager:
             stat["distribution"] = distribution
             total_messages = [vars(message) for message in session.query(Message).filter(
                 Message.distribution_id == dist_id)]
-            stat["total_messages_cnt"] = len(total_messages)
-            stat["created_messages_cnt"] = len(list(filter(
+            stat["messages_cnt"] = {}
+            stat["messages_cnt"]["total"] = len(total_messages)
+            stat["messages_cnt"]["created"] = len(list(filter(
                 lambda message: message["status"] == "created", total_messages)))
-            stat["sent_messages_cnt"] = len(list(filter(lambda message: message["status"] == "sent", total_messages)))
+            stat["messages_cnt"]["sent"] = len(list(filter(lambda message: message["status"] == "sent", total_messages)))
             if detailed:
                 stat["messages"] = {}
                 stat["messages"]["created"] = list(filter(
                     lambda message: message["status"] == "created", total_messages))
+                for message in stat["messages"]["created"]:
+                    message["client"] = self.parent.clients.get_by_id(message["client_id"])
                 stat["messages"]["sent"] = list(filter(lambda message: message["status"] == "sent", total_messages))
+                for message in stat["messages"]["sent"]:
+                    message["client"] = self.parent.clients.get_by_id(message["client_id"])
         return stat
 
     def manage_status(self, dist_id: int) -> str | None:

@@ -12,4 +12,4 @@ def get_stat():
 
 @router.get('/get_distribution_stat/{dist_id}')
 def get_distribution_stat(dist_id: int):
-    return data_manager.distributions.get_stat(dist_id)
+    return data_manager.distributions.get_stat(dist_id, detailed=True)
