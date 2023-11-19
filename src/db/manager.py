@@ -127,11 +127,15 @@ class DistributionsManager:
             distribution: Distribution | None = session.get(Distribution, dist_id)
             if distribution is None:
                 return
-            clients = session.query(Client).all()
-            if distribution.filter_tag is not None and distribution.filter_tag != "all":
+            if distribution.filter_tag != "all" and distribution.filter_mobile_operator != "000":
+                clients = session.query(Client).where((Client.tag == distribution.filter_tag) & (
+                    Client.mobile_operator == distribution.filter_mobile_operator))
+            elif distribution.filter_tag != "all":
                 clients = session.query(Client).where(Client.tag == distribution.filter_tag)
-            if distribution.filter_mobile_operator is not None and distribution.filter_mobile_operator != "000":
+            elif distribution.filter_mobile_operator != "000":
                 clients = session.query(Client).where(Client.mobile_operator == distribution.filter_mobile_operator)
+            else:
+                clients = session.query(Client).all()
             for client in clients:
                 session.add(Message(distribution_id=distribution.id, client_id=client.id))
             distribution.status = "started"
