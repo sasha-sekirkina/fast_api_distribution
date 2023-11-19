@@ -11,4 +11,3 @@ REDIS_PORT = os.getenv("REDIS_PORT")
 URL = os.getenv("URL")
 TOKEN = os.getenv("TOKEN")
 
-DEBUG_MODE = os.getenv("DEBUG")
