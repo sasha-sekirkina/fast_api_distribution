@@ -26,8 +26,8 @@ def distribute(self, distribution_id: int = None):
         )
         raise Ignore()
     if distribution.status == "created":
-        data_manager.distributions.create_messages(distribution.id)
-    messages_to_send = data_manager.distributions.get_messages(distribution.id)
+        data_manager.messages.create_distribution_messages(distribution.id)
+    messages_to_send = data_manager.messages.get_distribution_messages(distribution.id)
     for message in messages_to_send:
         if message.status != "sent":
             client = data_manager.clients.get_by_id(message.client_id)
@@ -50,7 +50,7 @@ def distribute(self, distribution_id: int = None):
                 else:
                     logger.info(
                         f"Message sent id={message.id}, phone={client.phone_number}, text={distribution.text}")
-                    data_manager.distributions.mark_message_sent(message.id)
+                    data_manager.messages.mark_message_sent(message.id)
     status = data_manager.distributions.manage_status(distribution.id)
     if status != "finished":
         self.update_state(

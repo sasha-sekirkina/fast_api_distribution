@@ -13,6 +13,7 @@ class DataManager:
         self.session_maker = sessionmaker(engine)
         self.distributions = DistributionsManager(self)
         self.clients = ClientsManager(self)
+        self.messages = MessagesManager(self)
 
     def get_stat(self, detailed: bool = False) -> Dict:
         stat = {}
@@ -94,7 +95,8 @@ class DistributionsManager:
             stat["messages_cnt"]["total"] = len(total_messages)
             stat["messages_cnt"]["created"] = len(list(filter(
                 lambda message: message["status"] == "created", total_messages)))
-            stat["messages_cnt"]["sent"] = len(list(filter(lambda message: message["status"] == "sent", total_messages)))
+            stat["messages_cnt"]["sent"] = len(
+                list(filter(lambda message: message["status"] == "sent", total_messages)))
             if detailed:
                 stat["messages"] = {}
                 stat["messages"]["created"] = list(filter(
@@ -121,37 +123,6 @@ class DistributionsManager:
             distribution.status = new_status
             session.commit()
             return new_status
-
-    def create_messages(self, dist_id: int):
-        with self.session_maker() as session:
-            distribution: Distribution | None = session.get(Distribution, dist_id)
-            if distribution is None:
-                return
-            if distribution.filter_tag != "all" and distribution.filter_mobile_operator != "000":
-                clients = session.query(Client).where((Client.tag == distribution.filter_tag) & (
-                    Client.mobile_operator == distribution.filter_mobile_operator))
-            elif distribution.filter_tag != "all":
-                clients = session.query(Client).where(Client.tag == distribution.filter_tag)
-            elif distribution.filter_mobile_operator != "000":
-                clients = session.query(Client).where(Client.mobile_operator == distribution.filter_mobile_operator)
-            else:
-                clients = session.query(Client).all()
-            for client in clients:
-                session.add(Message(distribution_id=distribution.id, client_id=client.id))
-            distribution.status = "started"
-            session.commit()
-
-    def get_messages(self, dist_id: int) -> Query:
-        with self.session_maker() as session:
-            messages = session.query(Message).where(Message.distribution_id == dist_id)
-            return messages
-
-    def mark_message_sent(self, message_id):
-        with self.session_maker() as session:
-            message = session.get(Message, message_id)
-            message.status = "sent"
-            message.sending_time = datetime.datetime.now()
-            session.commit()
 
     def mark_distribution_expired(self, distribution_id: int):
         with self.session_maker() as session:
@@ -207,3 +178,46 @@ class ClientsManager:
             session.delete(cli)
             session.commit()
         return True
+
+
+class MessagesManager:
+
+    def __init__(self, parent: DataManager):
+        self.parent = parent
+        self.session_maker = parent.session_maker
+
+    def get_all_messages(self) -> Query:
+        with self.session_maker() as session:
+            messages = session.query(Message).all()
+            return messages
+
+    def get_distribution_messages(self, dist_id: int) -> Query:
+        with self.session_maker() as session:
+            messages = session.query(Message).where(Message.distribution_id == dist_id)
+            return messages
+
+    def mark_message_sent(self, message_id):
+        with self.session_maker() as session:
+            message = session.get(Message, message_id)
+            message.status = "sent"
+            message.sending_time = datetime.datetime.now()
+            session.commit()
+
+    def create_distribution_messages(self, dist_id: int):
+        with self.session_maker() as session:
+            distribution: Distribution | None = session.get(Distribution, dist_id)
+            if distribution is None:
+                return
+            if distribution.filter_tag != "all" and distribution.filter_mobile_operator != "000":
+                clients = session.query(Client).where((Client.tag == distribution.filter_tag) & (
+                        Client.mobile_operator == distribution.filter_mobile_operator))
+            elif distribution.filter_tag != "all":
+                clients = session.query(Client).where(Client.tag == distribution.filter_tag)
+            elif distribution.filter_mobile_operator != "000":
+                clients = session.query(Client).where(Client.mobile_operator == distribution.filter_mobile_operator)
+            else:
+                clients = session.query(Client).all()
+            for client in clients:
+                session.add(Message(distribution_id=distribution.id, client_id=client.id))
+            distribution.status = "started"
+            session.commit()
