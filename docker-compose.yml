@@ -29,7 +29,7 @@ services:
       - celery
       - redis
     ports:
-      - "8998:5555"
+      - "9995:5555"
 
   app:
     container_name: fastapi_app
@@ -38,7 +38,7 @@ services:
     env_file:
       - .env-non-dev
     ports:
-      - "9111:8000"
+      - "9991:8000"
     depends_on:
       - redis
       - celery
