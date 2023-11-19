@@ -1,9 +1,8 @@
 import datetime
-from typing import Dict, List, Callable, Type
+from typing import Dict, List, Type
 
 from sqlalchemy.orm import sessionmaker, Query
 
-from celery_conf import celery
 from db.models import Base, engine, Distribution, Client, Message
 from services.validation import NewDistribution, NewClient, UpdateClient, UpdateDistribution
 
@@ -22,7 +21,7 @@ class DataManager:
             stat["total_dist_cnt"] = len(distributions)
             stat["distributions"] = []
             for distribution in distributions:
-                result = self.distributions.get_stat(distribution["id"])
+                result = self.distributions.get_stat(distribution["id"], detailed)
                 if result is not False:
                     stat["distributions"].append(result)
             return stat
@@ -80,11 +79,9 @@ class DistributionsManager:
                 return False
             session.delete(dist)
             session.commit()
-        celery.control.revoke(dist_id, terminate=True)
         return True
 
     def get_stat(self, dist_id: int, detailed=False) -> Dict | bool:
-        # todo refactor
         stat = {}
         with self.session_maker() as session:
             distribution: Distribution | None = session.get(Distribution, dist_id)
