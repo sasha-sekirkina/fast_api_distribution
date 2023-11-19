@@ -27,6 +27,23 @@ class DataManager:
                     stat["distributions"].append(result)
             return stat
 
+    def manage_status(self, dist_id: int) -> str | None:
+        with self.session_maker() as session:
+            distribution: Distribution | None = session.get(Distribution, dist_id)
+            if distribution is None:
+                return distribution
+            if distribution.status in ["finished", "created"]:
+                return distribution.status
+            messages = self.messages.get_distribution_messages(distribution.id)
+            new_status = "finished"
+            for message in messages:
+                if message.status == "created":
+                    new_status = "unfinished"
+            distribution.status = new_status
+            session.commit()
+            session.close()
+            return new_status
+
 
 class DistributionsManager:
     def __init__(self, parent: DataManager):
@@ -107,22 +124,6 @@ class DistributionsManager:
                 for message in stat["messages"]["sent"]:
                     message["client"] = self.parent.clients.get_by_id(message["client_id"])
         return stat
-
-    def manage_status(self, dist_id: int) -> str | None:
-        with self.session_maker() as session:
-            distribution: Distribution | None = session.get(Distribution, dist_id)
-            if distribution is None:
-                return distribution
-            if distribution.status in ["finished", "created"]:
-                return distribution.status
-            messages = self.get_messages(distribution.id)
-            new_status = "finished"
-            for message in messages:
-                if message.status == "created":
-                    new_status = "unfinished"
-            distribution.status = new_status
-            session.commit()
-            return new_status
 
     def mark_distribution_expired(self, distribution_id: int):
         with self.session_maker() as session:
